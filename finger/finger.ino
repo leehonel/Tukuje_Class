@@ -12,39 +12,53 @@ Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 void setup()  
 {
 //  lcd(9,7,2,3,4,5);
+
   Serial.begin(9600);
-  Serial.println("fingertest");
+  Serial.println("Hardware Test!");
   // set the data rate for the sensor serial port
   finger.begin(57600);
+  
+  //To check availability of sensor hardware
   if (finger.verifyPassword()) {
-    Serial.println("Found fingerprint sensor!");
-  } else {
-    Serial.println("Did not find fingerprint sensor :(");
+    Serial.println("Fingerprint sensor found.");
+  } 
+  else {
+    Serial.println("Fingerprint sensor not found.(");
     while (1);
   }
+  
 }
+
+
+//Function loop to initialize the registration process
 void loop()                     // run over and over again
-{ Serial.println("Type in the ID # you want to save this finger as...");
+{ Serial.println("Key in current finger ID: ");
   uint8_t id = 0;
   while (true) {
     while (! Serial.available());
-    char c = Serial.read();
+    char c = Serial.read();  //to take in the ID entered
     if (! isdigit(c)) break;
     id *= 10;
     id += c - '0';
   }
-  Serial.print("Enrolling ID #");
+  
+  Serial.print("Enrolling ID: ");
   Serial.println(id); 
   while (!  getFingerprintEnroll(id) );
 }
+
+//When a fingerprint is registered once
+//Instance of registering a fingerprint
 uint8_t getFingerprintEnroll(uint8_t id) {
   uint8_t p = -1;
-  Serial.println("Waiting for valid finger to enroll");
+  
+  Serial.println("Place finger for ID: ");
+  Serial.print(id);
   while (p != FINGERPRINT_OK) {
     p = finger.getImage();
     switch (p) {
     case FINGERPRINT_OK:
-      Serial.println("Image taken");
+      Serial.println("Fringerprint Captured");
       break;
     case FINGERPRINT_NOFINGER:
       Serial.println(".");
@@ -60,11 +74,14 @@ uint8_t getFingerprintEnroll(uint8_t id) {
       break;
     }
   }
+  
+  
+  //Conversion of the first fingerprint
   // OK success!
   p = finger.image2Tz(1);
   switch (p) {
     case FINGERPRINT_OK:
-      Serial.println("Image converted");
+      Serial.println("Print saved");
       break;
     case FINGERPRINT_IMAGEMESS:
       Serial.println("Image too messy");
@@ -82,6 +99,9 @@ uint8_t getFingerprintEnroll(uint8_t id) {
       Serial.println("Unknown error");
       return p;
   }
+  
+  
+  //Second registration of the same fingerprint
   Serial.println("Remove finger");
   delay(2000);
   p = 0;
@@ -109,6 +129,8 @@ uint8_t getFingerprintEnroll(uint8_t id) {
       break;
     }
   }
+  
+  //conversion of the second fingerprint
   // OK success!
 p = finger.image2Tz(2);
   switch (p) {
@@ -131,6 +153,8 @@ p = finger.image2Tz(2);
       Serial.println("Unknown error");
       return p;
   }
+  
+  //Once both the first and second prints have been converted and found to match
   // OK converted!
   p = finger.createModel();
   if (p == FINGERPRINT_OK) {
@@ -144,7 +168,9 @@ p = finger.image2Tz(2);
   } else {
     Serial.println("Unknown error");
     return p;
-  }   
+  }
+
+  
     p = finger.storeModel(id);
   if (p == FINGERPRINT_OK) {
     Serial.println("Stored!");
@@ -162,3 +188,10 @@ p = finger.image2Tz(2);
     return p;
   }   
 }
+
+
+/*
+  For merging of the two files (finger.ino and InitialSD.ino), we need to take the id variable that is defined in the finger.ino file and use that 
+  as the index for each user as we create the user list. 
+  The id variable is created for every instance of registering a new fingerprint.
+*/
